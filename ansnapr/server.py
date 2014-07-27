@@ -2,7 +2,7 @@
 def main():
     from ansnapr.utils import debug
     import masterdirac.models.systemdefaults as sys_def
-    debug.InitLogging()
+    debug.initLogging()
     local = sys_def.get_system_defaults( component='Master', 
             setting_name="local_settings")
     init_q = local['init-queue']
