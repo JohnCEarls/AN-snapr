@@ -32,7 +32,7 @@ if sys.version_info < (2, 7):
 
 from setuptools import setup, find_packages
 console_scripts = [ 'ansnapr = ansnapr.server:main',
-        'ansnapr-logserver = ansnapr.utils.debug:logserver' ]
+        'ansnapr-logserver = ansnapr.utils.debug:startLogger' ]
 extra = dict(install_requires=["boto>=2.9.9","mpi4py>=1.2.2" ],
             entry_points=dict(console_scripts=console_scripts), 
              zip_safe=False)
