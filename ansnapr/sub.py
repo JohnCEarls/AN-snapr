@@ -1,7 +1,20 @@
 import logging
 import subprocess
+import boto
 
-def build_genome_index( genome_file, index_dir, **kwargs ):
+
+def run_command( log_queue_name, base_msg, command ):
+    """
+    wrapper function for launching a subprocess with logging
+    """
+    sn_sp = subprocess.Popen( command, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, shell=True )
+    conn = boto.connect_sqs()
+    q = conn.get_queue( log_queue_name )
+    log_subprocess_messages( sc_p, q, base_msg)
+
+
+def build_genome_index( log_queue_name, base_msg, genome_file, index_dir, **kwargs ):
     """
         Usage: snapr index <input.fa> <output-dir> [<options>]
         Options:
@@ -24,13 +37,10 @@ def build_genome_index( genome_file, index_dir, **kwargs ):
         -keysize          The number of bytes to use for the hash table key.  Larger values increase SNAP's memory footprint, but allow larger seeds.  Default: 4
         -large            Build a larger index that's a little faster, particualrly for runs with quick/inaccurate parameters.  Increases index size by
                    about 30%, depending on the other index parameters and the contents of the reference genome
-
     """
     command =  _gi_command( genome_file, index_dir, **kwargs)
-    sn_sp = subprocess.Popen( command, stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, shell=True )
-    #TODO: log_subprocess_messages( 
-    
+    base_msg['command'] = command
+    run_command( log_queue_name, base_msg, command )
 
 def _gi_command( genome_file, index_dir, **kwargs ):
     command = "snapr index %s %s " % (genome_file, index_dir)
@@ -42,7 +52,7 @@ def _gi_command( genome_file, index_dir, **kwargs ):
     return command
 
 
-def build_transcriptome_index( annotation_file, genome_file, transcriptome_dir, **kwargs ):
+def build_transcriptome_index( log_queue_name, base_msg, annotation_file, genome_file, transcriptome_dir, **kwargs ):
     """
         Usage: snapr transcriptome <input.gtf> <input.fa> <output-dir> [<options>]
         Options:
@@ -69,7 +79,6 @@ def build_transcriptome_index( annotation_file, genome_file, transcriptome_dir, 
     """
     print _ti_command( annotation_file, genome_file, transcriptome_dir, **kwargs )
 
-
 def _ti_command( annotation_file, genome_file, transcriptome_dir, **kwargs ):
     command = "snapr transcriptome %s %s %s" %  ( 
             annotation_file, genome_file, transcriptome_dir)
@@ -80,7 +89,7 @@ def _ti_command( annotation_file, genome_file, transcriptome_dir, **kwargs ):
             command = "%s -%s" % (command, key )
     return command
 
-def align_transcriptome( read_type, index_dir, transcript_dir, annotation, read_file, out_file , sort=False):
+def align_transcriptome(  log_queue_name, base_msg, read_type, index_dir, transcript_dir, annotation, read_file, out_file , sort=False):
     command = _align_command(  read_type, index_dir, transcript_dir, 
             annotation, read_file, out_file , sort)
 
